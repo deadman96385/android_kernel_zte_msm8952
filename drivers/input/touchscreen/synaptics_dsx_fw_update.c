@@ -28,7 +28,7 @@
 #include <linux/input/synaptics_dsx.h>
 #include "synaptics_dsx_i2c.h"
 
-//#define DO_STARTUP_FW_UPDATE
+#define DO_STARTUP_FW_UPDATE
 #ifdef DO_STARTUP_FW_UPDATE
 #ifdef CONFIG_FB
 #define WAIT_FOR_FB_READY

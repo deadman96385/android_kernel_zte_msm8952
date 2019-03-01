@@ -432,6 +432,7 @@ struct fg_chip {
 	struct fg_wakeup_source	empty_check_wakeup_source;
 	struct fg_wakeup_source	resume_soc_wakeup_source;
 	struct fg_wakeup_source	gain_comp_wakeup_source;
+	struct fg_wakeup_source	capacity_learning_wakeup_source;
 	bool			first_profile_loaded;
 	struct fg_wakeup_source	update_temp_wakeup_source;
 	struct fg_wakeup_source	update_sram_wakeup_source;
@@ -2805,6 +2806,12 @@ static void fg_cap_learning_work(struct work_struct *work)
 		goto fail;
 	}
 
+	if (chip->wa_flag & USE_CC_SOC_REG) {
+		mutex_unlock(&chip->learning_data.learning_lock);
+		fg_relax(&chip->capacity_learning_wakeup_source);
+		return;
+	}
+
 	fg_mem_lock(chip);
 
 	rc = fg_mem_read(chip, i_filtered, I_FILTERED_REG, 3, 0, 0);
@@ -2835,6 +2842,7 @@ static void fg_cap_learning_work(struct work_struct *work)
 
 fail:
 	mutex_unlock(&chip->learning_data.learning_lock);
+	fg_relax(&chip->capacity_learning_wakeup_source);
 	return;
 
 }
@@ -3863,8 +3871,8 @@ static irqreturn_t fg_soc_irq_handler(int irq, void *_chip)
 
 	if (chip->wa_flag & USE_CC_SOC_REG
 			&& chip->learning_data.active) {
-		if (!fg_is_temperature_ok_for_learning(chip))
-			fg_cap_learning_stop(chip);
+		fg_stay_awake(&chip->capacity_learning_wakeup_source);
+		schedule_work(&chip->fg_cap_learning_work);
 	}
 
 	return IRQ_HANDLED;
@@ -5224,6 +5232,7 @@ static void fg_cleanup(struct fg_chip *chip)
 	wakeup_source_trash(&chip->update_temp_wakeup_source.source);
 	wakeup_source_trash(&chip->update_sram_wakeup_source.source);
 	wakeup_source_trash(&chip->gain_comp_wakeup_source.source);
+	wakeup_source_trash(&chip->capacity_learning_wakeup_source.source);
 }
 
 static int fg_remove(struct spmi_device *spmi)
@@ -6109,6 +6118,8 @@ static int fg_probe(struct spmi_device *spmi)
 			"qpnp_fg_set_resume_soc");
 	wakeup_source_init(&chip->gain_comp_wakeup_source.source,
 			"qpnp_fg_gain_comp");
+	wakeup_source_init(&chip->capacity_learning_wakeup_source.source,
+			"qpnp_fg_cap_learning");
 	mutex_init(&chip->rw_lock);
 	mutex_init(&chip->cyc_ctr.lock);
 	mutex_init(&chip->learning_data.learning_lock);
@@ -6306,6 +6317,7 @@ of_init_fail:
 	wakeup_source_trash(&chip->update_temp_wakeup_source.source);
 	wakeup_source_trash(&chip->update_sram_wakeup_source.source);
 	wakeup_source_trash(&chip->gain_comp_wakeup_source.source);
+	wakeup_source_trash(&chip->capacity_learning_wakeup_source.source);
 	return rc;
 }
 

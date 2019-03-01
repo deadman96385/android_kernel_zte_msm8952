@@ -2569,7 +2569,7 @@ static void synaptics_get_configid(
 	if (was_in_bl_mode&&ts->flash_prog_mode==true) {
 		printk("pzh: now in bootloader mode\n");
 		
-		retval = synaptics_rmi4_i2c_read(ts,bootloader_rmi4_data->f01_query_base_addr+3,
+		retval = synaptics_rmi4_i2c_read(ts,bootloader_rmi4_data->f01_query_base_addr+2,
 			&chip_type,sizeof(chip_type));
 		
 		if (retval < 0){
@@ -2578,7 +2578,7 @@ static void synaptics_get_configid(
 		}
 		ts->config_id.chip_type=chip_type;
 		printk("pzh:ts->config_id.chip_type=%d",ts->config_id.chip_type);
-		retval = synaptics_rmi4_i2c_read(ts,bootloader_rmi4_data->f01_query_base_addr+2,
+		retval = synaptics_rmi4_i2c_read(ts,bootloader_rmi4_data->f01_query_base_addr+3,
 			&sensor_id,sizeof(sensor_id));
 		if (retval < 0){
 			printk("pzh:synaptics_rmi4_reg_read_sensor_id error\n");

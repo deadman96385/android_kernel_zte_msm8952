@@ -1260,8 +1260,7 @@ static void smbchg_usb_update_online_work(struct work_struct *work)
 	int online;
 
 	online = user_enabled && chip->usb_present && !chip->very_weak_charger;
-	pr_info("chip->usb_online:%d,online:%d,user_enabled:%d,chip->usb_present:%d,chip->very_weak_charger:%d\n",
-		chip->usb_online,online,user_enabled,chip->usb_present,chip->very_weak_charger);
+
 	mutex_lock(&chip->usb_set_online_lock);
 	if (chip->usb_online != online) {
 		power_supply_set_online(chip->usb_psy, online);
@@ -4155,9 +4154,6 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 			ICL_OVERRIDE_BIT, 0);
 	if (rc < 0)
 		pr_err("Couldn't set override rc = %d\n", rc);
-
-	cancel_delayed_work_sync(&chip->hvdcp_det_work);  //ZTE_CHG  fix for error.2016
-	//cancel_delayed_work_sync(&chip->apsd_rerun_work);  //ZTE_CHG  need debug more.
 }
 
 static bool is_src_detect_high(struct smbchg_chip *chip)

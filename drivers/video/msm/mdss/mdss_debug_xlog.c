@@ -522,8 +522,10 @@ int mdss_xlog_tout_handler_iommu(struct iommu_domain *domain,
 	if (!mdss_xlog_is_enabled(MDSS_XLOG_IOMMU))
 		return 0;
 
-	MDSS_XLOG_TOUT_HANDLER_WQ("mdp", "dsi0_ctrl", "dsi0_phy", 
-	 "dsi1_ctrl", "dsi1_phy", "vbif", "panic"); 
+	mdss_dump_reg_by_blk("mdp");
+	mdss_dump_reg_by_blk("vbif");
+	mdss_xlog_dump_all();
+	panic("mdp iommu");
 
 	return 0;
 }

@@ -22,6 +22,7 @@
 #include <linux/sched.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <soc/qcom/socinfo.h>
 
 struct boot_stats {
 	uint32_t bootloader_start;
@@ -104,3 +105,72 @@ int boot_stats_init(void)
 	return 0;
 }
 
+/*
+ * Support for FTM & RECOVERY mode by ZTE_BOOT
+ */
+#ifdef CONFIG_ZTE_BOOT_MODE
+
+static int __init bootmode_init(char *mode)
+{
+        int boot_mode = 0;
+
+        if (!strncmp(mode, ANDROID_BOOT_MODE_NORMAL, strlen(ANDROID_BOOT_MODE_NORMAL)))
+        {
+                boot_mode = ENUM_BOOT_MODE_NORMAL;
+                pr_err("KERENEL:boot_mode:NORMAL\n");
+        }
+        else if (!strncmp(mode, ANDROID_BOOT_MODE_FTM, strlen(ANDROID_BOOT_MODE_FTM)))
+	{
+                boot_mode = ENUM_BOOT_MODE_FTM;
+                pr_err("KERENEL:boot_mode:FTM\n");
+	}
+        else if (!strncmp(mode, ANDROID_BOOT_MODE_RECOVERY, strlen(ANDROID_BOOT_MODE_RECOVERY)))
+	{
+                boot_mode = ENUM_BOOT_MODE_RECOVERY;
+                pr_err("KERENEL:boot_mode:RECOVERY\n");
+	}
+        else if (!strncmp(mode, ANDROID_BOOT_MODE_FFBM, strlen(ANDROID_BOOT_MODE_FFBM)))
+	{
+                boot_mode = ENUM_BOOT_MODE_FFBM;
+                pr_err("KERENEL:boot_mode:FFBM\n");
+	}
+
+	else
+	{
+                boot_mode = ENUM_BOOT_MODE_NORMAL;
+                pr_err("KERENEL:boot_mode:DEFAULT NORMAL\n");
+	}
+
+        socinfo_set_boot_mode(boot_mode);
+
+        return 0;
+}
+__setup(ANDROID_BOOT_MODE, bootmode_init);
+///lkej add code for pv version
+#define SOCINFO_CMDLINE_PV_FLAG "androidboot.pv-version="
+#define SOCINFO_CMDLINE_PV_VERSION   "1"
+#define SOCINFO_CMDLINE_NON_PV_VERSION      "0"
+static int __init zte_pv_flag_init(char *ver)
+{
+	int is_pv_ver = 0;
+
+	if (!strncmp(ver, SOCINFO_CMDLINE_PV_VERSION, strlen(SOCINFO_CMDLINE_PV_VERSION)))
+	{
+		is_pv_ver = 1;
+	}
+    printk(KERN_ERR "pv flag: %d ", is_pv_ver);
+	socinfo_set_pv_flag(is_pv_ver);
+	return 0;
+}
+__setup(SOCINFO_CMDLINE_PV_FLAG, zte_pv_flag_init);
+
+static int __init zte_hw_ver_init(char *ver)
+{
+	printk(KERN_ERR "hw ver: %s ", ver);
+	socinfo_set_hw_ver(ver);
+	return 0;
+}
+
+#define SOCINFO_CMDLINE_HW_VER "androidboot.hw_ver="
+__setup(SOCINFO_CMDLINE_HW_VER, zte_hw_ver_init);
+#endif

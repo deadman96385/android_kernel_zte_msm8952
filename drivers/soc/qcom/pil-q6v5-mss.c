@@ -43,7 +43,11 @@
 
 #define subsys_to_drv(d) container_of(d, struct modem_data, subsys_desc)
 
+#if defined(ZTE_FEATURE_TF_SECURITY_SYSTEM)
+static void log_modem_sfr(struct subsys_device *modem_dev)
+#else
 static void log_modem_sfr(void)
+#endif
 {
 	u32 size;
 	char *smem_reason, reason[MAX_SSR_REASON_LEN];
@@ -62,13 +66,27 @@ static void log_modem_sfr(void)
 	strlcpy(reason, smem_reason, min(size, MAX_SSR_REASON_LEN));
 	pr_err("modem subsystem failure reason: %s.\n", reason);
 
+#if defined(ZTE_FEATURE_TF_SECURITY_SYSTEM)
+	if (strstr(reason, "secure fastboot from modem: 0x77665500"))
+		subsystem_set_modem_force_to_fastboot(modem_dev);
+	else
+		subsystem_clr_modem_force_to_fastboot(modem_dev);
+#endif
+	
 	smem_reason[0] = '\0';
 	wmb();
 }
 
 static void restart_modem(struct modem_data *drv)
 {
+	printk(KERN_ERR "restart modem-->\n");
+	
+#if defined(ZTE_FEATURE_TF_SECURITY_SYSTEM)
+	log_modem_sfr(drv->subsys);
+#else
 	log_modem_sfr();
+#endif
+
 	subsystem_restart_dev(drv->subsys);
 }
 

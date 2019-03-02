@@ -50,6 +50,7 @@ obj-$(CONFIG_MSM_SMP2P_TEST) += smp2p_loopback.o smp2p_test.o smp2p_spinlock_tes
 obj-$(CONFIG_MSM_DCC) += dcc.o
 obj-$(CONFIG_MSM_WATCHDOG_V2) += watchdog_v2.o
 obj-$(CONFIG_MEM_SHARE_QMI_SERVICE)		+= memshare/
+obj-y		+= f3mem/
 obj-$(CONFIG_MSM_SPM) += spm.o spm_devices.o
 obj-y		+= socinfo.o
 

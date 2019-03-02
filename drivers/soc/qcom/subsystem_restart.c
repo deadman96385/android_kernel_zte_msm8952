@@ -38,8 +38,15 @@
 #include <soc/qcom/subsystem_notif.h>
 #include <soc/qcom/socinfo.h>
 #include <soc/qcom/sysmon.h>
+#include <soc/qcom/smem.h>
 
 #include <asm/current.h>
+
+#if defined(ZTE_FEATURE_TF_SECURITY_SYSTEM)
+#include <linux/reboot.h>
+#endif
+
+#define SUBSYSTEM_RAMDUMP_FLUSH_TIME        5000
 
 #define DISABLE_SSR 0x9889deed
 /* If set to 0x9889deed, call to subsystem_restart_dev() returns immediately */
@@ -49,8 +56,15 @@ module_param(disable_restart_work, uint, S_IRUGO | S_IWUSR);
 static int enable_debug;
 module_param(enable_debug, int, S_IRUGO | S_IWUSR);
 
+
+
+static int sddump_status = 0;
+module_param(sddump_status, int, S_IRUGO | S_IWUSR);
+
+
 #define SHUTDOWN_ACK_MAX_LOOPS	50
 #define SHUTDOWN_ACK_DELAY	100
+
 
 /**
  * enum p_subsys_state - state of a subsystem (private)
@@ -601,6 +615,7 @@ static void subsystem_shutdown(struct subsys_device *dev, void *data)
 static void subsystem_ramdump(struct subsys_device *dev, void *data)
 {
 	const char *name = dev->desc->name;
+	pr_info("subsystem_ramdump start to dump %s\n", name);
 
 	if (dev->desc->ramdump)
 		if (dev->desc->ramdump(is_ramdump_enabled(dev), dev->desc) < 0)
@@ -948,11 +963,71 @@ static void device_restart_work_hdlr(struct work_struct *work)
 {
 	struct subsys_device *dev = container_of(work, struct subsys_device,
 							device_restart_work);
+	if (enable_ramdumps)
+	{
+		struct subsys_device **list;
+		struct subsys_soc_restart_order *order = dev->restart_order;
+		unsigned count;
+
+		/*
+		 * It's OK to not take the registration lock at this point.
+		 * This is because the subsystem list inside the relevant
+		 * restart order is not being traversed.
+		 */
+		if (order) {
+			list = order->subsys_ptrs;
+			count = order->count;
+		} else {
+			list = &dev;
+			count = 1;
+		}
+
+		pr_info("device_restart_work_hdlr start to dump\n");
+
+		mutex_lock(&soc_order_reg_lock);
+
+		notify_each_subsys_device(list, count, SUBSYS_BEFORE_SHUTDOWN, NULL);
+		for_each_subsys_device(list, count, NULL, subsystem_shutdown);
+		notify_each_subsys_device(list, count, SUBSYS_AFTER_SHUTDOWN, NULL);
+
+		notify_each_subsys_device(list, count, SUBSYS_RAMDUMP_NOTIFICATION,
+		                NULL);
+		/* Collect ram dumps for all subsystems in order here */
+		for_each_subsys_device(list, count, NULL, subsystem_ramdump);
+		for_each_subsys_device(list, count, NULL, subsystem_free_memory);
+		mutex_unlock(&soc_order_reg_lock);
+
+		msleep_interruptible(SUBSYSTEM_RAMDUMP_FLUSH_TIME);
+	}
 
 	notify_each_subsys_device(&dev, 1, SUBSYS_SOC_RESET, NULL);
-	panic("subsys-restart: Resetting the SoC - %s crashed.",
-							dev->desc->name);
+
+
+#if defined(ZTE_FEATURE_TF_SECURITY_SYSTEM)
+	if (!strncmp(dev->desc->name, "modem", 5) && (dev->desc->force_to_fastboot == 0x77665500)) {
+		extern int trigger_modem_to_fastboot;
+		trigger_modem_to_fastboot = 1;
+		kernel_restart("bootloader");
+	} else
+		panic("subsys-restart: Resetting the SoC - %s crashed.", dev->desc->name);
+#else
+	panic("subsys-restart: Resetting the SoC - %s crashed.", dev->desc->name);
+#endif
 }
+
+#if defined(ZTE_FEATURE_TF_SECURITY_SYSTEM)
+void subsystem_set_modem_force_to_fastboot(struct subsys_device *dev)
+{
+	dev->desc->force_to_fastboot = 0x77665500;
+	return;
+}
+
+void subsystem_clr_modem_force_to_fastboot(struct subsys_device *dev)
+{
+	dev->desc->force_to_fastboot = 0x0;
+	return;
+}
+#endif
 
 int subsystem_restart_dev(struct subsys_device *dev)
 {
@@ -986,7 +1061,11 @@ int subsystem_restart_dev(struct subsys_device *dev)
 		"subsys-restart: Ignoring restart request for %s.\n", name)) {
 		return 0;
 	}
-
+#if defined(ZTE_FEATURE_TF_SECURITY_SYSTEM)
+	if (!strncmp(dev->desc->name, "modem", 5) && (dev->desc->force_to_fastboot == 0x77665500)) {
+		dev->restart_level = RESET_SOC;
+	}
+#endif
 	switch (dev->restart_level) {
 
 	case RESET_SUBSYS_COUPLED:
@@ -1698,12 +1777,31 @@ static struct notifier_block panic_nb = {
 	.notifier_call  = ssr_panic_handler,
 };
 
+static int msm_get_sd_dump_status(void)
+{
+    int sd_dump_status = 0;
+    int * zte_smd_ptr = NULL;
+    zte_smd_ptr = (int *)smem_alloc(SMEM_ID_VENDOR1, sizeof(int), 0, SMEM_ANY_HOST_FLAG);
+    if (!zte_smd_ptr)
+    {
+        return 0;
+    }
+    sd_dump_status = *zte_smd_ptr;
+    *zte_smd_ptr = 0;
+
+    return sd_dump_status;
+
+}
+
 static int __init subsys_restart_init(void)
 {
 	int ret;
 
 	ssr_wq = alloc_workqueue("ssr_wq", WQ_CPU_INTENSIVE, 0);
 	BUG_ON(!ssr_wq);
+  
+	sddump_status = msm_get_sd_dump_status();
+	pr_warn("subsys_restart_init msm_get_sd_dump_status : %d\n", sddump_status);
 
 	ret = bus_register(&subsys_bus_type);
 	if (ret)

@@ -92,14 +92,14 @@ static struct wcd_mbhc_config mbhc_cfg = {
 	.swap_gnd_mic = NULL,
 	.hs_ext_micbias = false,
 	.key_code[0] = KEY_MEDIA,
-	.key_code[1] = KEY_VOICECOMMAND,
+	.key_code[1] = KEY_VOLUMEUP, //KEY_VOICECOMMAND
 	.key_code[2] = KEY_VOLUMEUP,
 	.key_code[3] = KEY_VOLUMEDOWN,
 	.key_code[4] = 0,
 	.key_code[5] = 0,
 	.key_code[6] = 0,
 	.key_code[7] = 0,
-	.linein_th = 5000,
+	//.linein_th = 5000,
 };
 
 static struct afe_clk_cfg mi2s_rx_clk = {
@@ -508,7 +508,14 @@ static int msm_mi2s_snd_hw_params(struct snd_pcm_substream *substream,
 {
 	pr_debug("%s(): substream = %s  stream = %d\n", __func__,
 		 substream->name, substream->stream);
-	param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT, mi2s_rx_bit_format);
+	//ZTE_ZJB fix sound recording distortion
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		pr_debug("%s():zjb set Rx SNDRV_PCM_HW_PARAM_FORMAT =  mi2s_rx_bit_format\n", __func__);
+		param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT, mi2s_rx_bit_format);
+	}else{
+		pr_debug("%s():zjb set Tx SNDRV_PCM_HW_PARAM_FORMAT =  SNDRV_PCM_FORMAT_S16_LE\n", __func__);
+		param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT, SNDRV_PCM_FORMAT_S16_LE);
+	}
 	return 0;
 }
 
@@ -1526,8 +1533,8 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 	 */
 	btn_low[0] = 75;
 	btn_high[0] = 75;
-	btn_low[1] = 150;
-	btn_high[1] = 150;
+	btn_low[1] = 100;
+	btn_high[1] = 100;
 	btn_low[2] = 225;
 	btn_high[2] = 225;
 	btn_low[3] = 450;
@@ -2199,8 +2206,13 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.stream_name = "Quaternary MI2S Playback",
 		.cpu_dai_name = "msm-dai-q6-mi2s.3",
 		.platform_name = "msm-pcm-routing",
+#if defined(CONFIG_SND_SOC_AK4375)		
+		.codec_dai_name = "ak4375-AIF1",
+		.codec_name = "ak4375",
+#else		
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif		
 		.no_pcm = 1,
 		.be_id = MSM_BACKEND_DAI_QUATERNARY_MI2S_RX,
 		.be_hw_params_fixup = msm_be_hw_params_fixup,

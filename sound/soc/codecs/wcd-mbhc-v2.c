@@ -37,6 +37,16 @@
 #include "msm8x16-wcd.h"
 #include "wcdcal-hwdep.h"
 
+/** ZTE_MODIFY LiuTao 20150723, for pv & fastmmi */
+/* zte weizhijun add headset detect /proc/hs 2013-12-17 start */
+#include <linux/time.h>
+#include <asm/uaccess.h>
+#include <linux/proc_fs.h>
+
+static int hs_type = 0;
+/* zte weizhijun add headset detect /proc/hs 2013-12-17 end */
+/* ZTE_MODIFY_END */
+
 #define WCD_MBHC_JACK_MASK (SND_JACK_HEADSET | SND_JACK_OC_HPHL | \
 			   SND_JACK_OC_HPHR | SND_JACK_LINEOUT | \
 			   SND_JACK_UNSUPPORTED | SND_JACK_MECHANICAL)
@@ -45,7 +55,7 @@
 				  SND_JACK_BTN_4)
 #define OCP_ATTEMPT 1
 #define HS_DETECT_PLUG_TIME_MS (3 * 1000)
-#define SPECIAL_HS_DETECT_TIME_MS (2 * 1000)
+#define SPECIAL_HS_DETECT_TIME_MS 500//(2 * 1000)
 #define MBHC_BUTTON_PRESS_THRESHOLD_MIN 250
 #define GND_MIC_SWAP_THRESHOLD 4
 #define WCD_FAKE_REMOVAL_MIN_PERIOD_MS 100
@@ -89,6 +99,16 @@ static void wcd_mbhc_jack_report(struct wcd_mbhc *mbhc,
 				struct snd_soc_jack *jack, int status, int mask)
 {
 	snd_soc_jack_report_no_dapm(jack, status, mask);
+/* ZTE_Audio_CJ_120530, chenjun, 2012-05-30, start */
+	if (jack == &mbhc->headset_jack)
+	{
+		pr_err("chenjun:%s:headset_jack status(%#X)\n", __func__, status);
+	}
+	else if (jack == &mbhc->button_jack)
+	{
+		pr_err("chenjun:%s:button_jack status(%#X)\n", __func__, status);
+	}
+/* ZTE_Audio_CJ_120530, chenjun, 2012-05-30, end */
 }
 
 static void __hphocp_off_report(struct wcd_mbhc *mbhc, u32 jack_status,
@@ -713,7 +733,7 @@ static void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 		wcd_mbhc_set_and_turnoff_hph_padac(mbhc);
 		hphrocp_off_report(mbhc, SND_JACK_OC_HPHR);
 		hphlocp_off_report(mbhc, SND_JACK_OC_HPHL);
-		mbhc->current_plug = MBHC_PLUG_TYPE_NONE;
+		hs_type = mbhc->current_plug = MBHC_PLUG_TYPE_NONE; // ZTE_MODIFY LiuTao 20150723, for pv & fastmmi
 	} else {
 		/*
 		 * Report removal of current jack type.
@@ -758,15 +778,15 @@ static void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 
 		/* Report insertion */
 		if (jack_type == SND_JACK_HEADPHONE)
-			mbhc->current_plug = MBHC_PLUG_TYPE_HEADPHONE;
+			hs_type = mbhc->current_plug = MBHC_PLUG_TYPE_HEADPHONE;    // ZTE_MODIFY LiuTao 20150723, for pv & fastmmi
 		else if (jack_type == SND_JACK_UNSUPPORTED)
-			mbhc->current_plug = MBHC_PLUG_TYPE_GND_MIC_SWAP;
+			hs_type = mbhc->current_plug = MBHC_PLUG_TYPE_GND_MIC_SWAP; // ZTE_MODIFY LiuTao 20150723, for pv & fastmmi
 		else if (jack_type == SND_JACK_HEADSET) {
-			mbhc->current_plug = MBHC_PLUG_TYPE_HEADSET;
+			hs_type = mbhc->current_plug = MBHC_PLUG_TYPE_HEADSET;  // ZTE_MODIFY LiuTao 20150723, for pv & fastmmi
 			mbhc->jiffies_atreport = jiffies;
 		}
 		else if (jack_type == SND_JACK_LINEOUT)
-			mbhc->current_plug = MBHC_PLUG_TYPE_HIGH_HPH;
+			hs_type = mbhc->current_plug = MBHC_PLUG_TYPE_HIGH_HPH; // ZTE_MODIFY LiuTao 20150723, for pv & fastmmi
 
 		if (mbhc->impedance_detect &&
 			(mbhc->mbhc_cfg->linein_th != 0)) {
@@ -775,16 +795,7 @@ static void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 			if ((mbhc->zl > mbhc->mbhc_cfg->linein_th) &&
 				(mbhc->zr > mbhc->mbhc_cfg->linein_th)) {
 				jack_type = SND_JACK_LINEOUT;
-				mbhc->current_plug = MBHC_PLUG_TYPE_HIGH_HPH;
-				if (mbhc->hph_status) {
-					mbhc->hph_status &= ~(SND_JACK_HEADSET |
-							SND_JACK_LINEOUT |
-							SND_JACK_UNSUPPORTED);
-					wcd_mbhc_jack_report(mbhc,
-							&mbhc->headset_jack,
-							mbhc->hph_status,
-							WCD_MBHC_JACK_MASK);
-				}
+				hs_type = mbhc->current_plug = MBHC_PLUG_TYPE_HIGH_HPH; // ZTE_MODIFY LiuTao 20150723, for pv & fastmmi
 				pr_debug("%s: Marking jack type as SND_JACK_LINEOUT\n",
 				__func__);
 			}
@@ -829,7 +840,28 @@ static void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 						SND_JACK_HEADPHONE);
 			if (mbhc->current_plug == MBHC_PLUG_TYPE_HEADSET)
 				wcd_mbhc_report_plug(mbhc, 0, SND_JACK_HEADSET);
-		wcd_mbhc_report_plug(mbhc, 1, SND_JACK_UNSUPPORTED);
+		//wcd_mbhc_report_plug(mbhc, 1, SND_JACK_UNSUPPORTED);
+		/*
+		 * calculate impedance detection
+		 * If Zl and Zr > 20k then it is special accessory
+		 * otherwise unsupported cable.
+		 */
+		if (mbhc->impedance_detect) {
+				wcd_mbhc_calc_impedance(mbhc,
+					&mbhc->zl, &mbhc->zr);
+			if ((mbhc->zl > 20000) && (mbhc->zr > 20000)) {
+				pr_debug("%s: special accessory \n", __func__);
+				/* Toggle switch back */
+				if (mbhc->mbhc_cfg->swap_gnd_mic &&
+					mbhc->mbhc_cfg->swap_gnd_mic(codec)) {
+					pr_debug("%s: US_EU gpio present,flip switch again\n"
+							, __func__);
+				}
+				wcd_mbhc_report_plug(mbhc, 1, SND_JACK_HEADSET);
+			}else {
+				wcd_mbhc_report_plug(mbhc, 1, SND_JACK_UNSUPPORTED);
+			}
+		}
 	} else if (plug_type == MBHC_PLUG_TYPE_HEADSET) {
 		/*
 		 * If Headphone was reported previously, this will
@@ -1130,6 +1162,12 @@ static void wcd_correct_swch_plug(struct work_struct *work)
 			pr_debug("%s: cable is extension cable\n", __func__);
 			plug_type = MBHC_PLUG_TYPE_HIGH_HPH;
 			wrk_complete = true;
+			if (wcd_is_special_headset(mbhc)) {
+				pr_debug("%s:zjb new Special headset found %d\n",
+						__func__, plug_type);
+				plug_type = MBHC_PLUG_TYPE_HEADSET;
+				goto report;
+			}
 		} else {
 			pr_debug("%s: cable might be headset: %d\n", __func__,
 					plug_type);
@@ -2116,6 +2154,29 @@ EXPORT_SYMBOL(wcd_mbhc_stop);
  *
  * NOTE: mbhc->mbhc_cfg is not YET configure so shouldn't be used
  */
+
+/** ZTE_MODIFY LiuTao 20150723, for pv & fastmmi */
+/* zte weizhijun add headset detect /proc/hs 2013-12-17 start */
+static ssize_t hs_read(struct file *file, char __user *buf,
+			      size_t count, loff_t *pos)
+{
+    int ret = 0;
+    char buffer[32] = {0};
+    ret = scnprintf(buffer, 32, "%d\n", hs_type);
+    pr_err("weizhijun %s: hs_read  %d\n", __func__, hs_type);
+
+    ret = simple_read_from_buffer(buf, count, pos, buffer, ret);
+
+    return ret;
+}
+
+static const struct file_operations hs_detect_ops = {
+    .owner    = THIS_MODULE,
+    .read     = hs_read,
+};
+/* zte weizhijun add headset detect /proc/hs 2013-12-17 end */
+/* ZTE_MODIFY_END */
+
 int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 		      const struct wcd_mbhc_cb *mbhc_cb,
 		      const struct wcd_mbhc_intr *mbhc_cdc_intr_ids,
@@ -2125,6 +2186,7 @@ int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 	int hph_swh = 0;
 	int gnd_swh = 0;
 	struct snd_soc_card *card = codec->card;
+    struct proc_dir_entry *proc_hs_type;//weizhijun add headset detect, ZTE_MODIFY LiuTao 20150723, for pv & fastmmi
 	const char *hph_switch = "qcom,msm-mbhc-hphl-swh";
 	const char *gnd_switch = "qcom,msm-mbhc-gnd-swh";
 
@@ -2275,6 +2337,16 @@ int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 		goto err_hphr_ocp_irq;
 	}
 
+	/** ZTE_MODIFY LiuTao 20150723, for pv & fastmmi */
+	/* zte weizhijun add headset detect /proc/hs 2013-12-17 start */
+	proc_hs_type = proc_create("hs", S_IRUGO, NULL, &hs_detect_ops);
+	if (!proc_hs_type) {
+		printk(KERN_ERR"[YXS]hs: unable to register '/proc/hs' \n");
+	}
+	pr_err("weizhijun %s: enter\n", __func__);
+	/* zte weizhijun add headset detect /proc/hs 2013-12-17 end*/
+	/* ZTE_MODIFY_END */
+
 	pr_debug("%s: leave ret %d\n", __func__, ret);
 	return ret;
 
@@ -2311,6 +2383,14 @@ void wcd_mbhc_deinit(struct wcd_mbhc *mbhc)
 	wcd9xxx_spmi_free_irq(mbhc->intr_ids->hph_left_ocp, mbhc);
 	wcd9xxx_spmi_free_irq(mbhc->intr_ids->hph_right_ocp, mbhc);
 	msm8x16_unregister_notifier(codec, &mbhc->nblock);
+
+	/** ZTE_MODIFY LiuTao 20150723, for pv & fastmmi */
+	/* zte weizhijun add headset detect /proc/hs 2013-12-17 start */
+	remove_proc_entry("hs", NULL);
+    pr_err("weizhijun %s: deinit\n", __func__);
+	/* zte weizhijun add headset detect /proc/hs 2013-12-17 end */
+	/* ZTE_MODIFY_END*/
+
 	mutex_destroy(&mbhc->codec_resource_lock);
 }
 EXPORT_SYMBOL(wcd_mbhc_deinit);

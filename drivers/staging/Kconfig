@@ -140,4 +140,7 @@ source "drivers/staging/netlogic/Kconfig"
 
 source "drivers/staging/dwc2/Kconfig"
 
+#include zte ftm kconfig
+source "drivers/staging/zte_ftm/Kconfig"
+
 endif # STAGING

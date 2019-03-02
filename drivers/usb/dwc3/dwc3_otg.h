@@ -22,7 +22,13 @@
 #include <linux/usb/otg.h>
 #include "power.h"
 
+//#ifdef dev_dbg
+//#undef dev_dbg
+//#define dev_dbg(...)  dev_err(__VA_ARGS__) //for debug
+//#endif
+
 #define DWC3_IDEV_CHG_MAX 1500
+#define DWC3_IDEV_CHG_INVALID 500
 #define DWC3_HVDCP_CHG_MAX 1800
 
 /*
@@ -48,6 +54,9 @@ struct dwc3_otg {
 	struct regulator	*vbus_otg;
 	int			cpe_gpio;
 	struct delayed_work	sm_work;
+	/*wall charger in which D+/D- disconnected would be recognized as usb cable, 1/6*/
+	struct delayed_work	invalid_chg_work;
+	/*end*/
 	struct dwc3_charger	*charger;
 	struct dwc3_ext_xceiv	*ext_xceiv;
 #define ID		 0

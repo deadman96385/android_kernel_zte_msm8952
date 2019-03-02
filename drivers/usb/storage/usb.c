@@ -1000,6 +1000,9 @@ int usb_stor_probe1(struct us_data **pus,
 	/* Give the caller a chance to fill in specialized transport
 	 * or protocol settings.
 	 */
+#ifdef CONFIG_USB_VOLUME_DETECT
+	host->usb_volume = 1;
+#endif
 	return 0;
 
 BadDevice:

@@ -214,3 +214,13 @@ config USB_UAS
 	  say 'Y' or 'M' here and the kernel will use the right driver.
 
 	  If you compile this driver as a module, it will be named uas.
+
+config USB_VOLUME_DETECT
+	bool "Detect Volume Changes in Usb Storage Device"
+	depends on USB
+	help
+	  Volumes in usb storage device may not present at the same
+	  tome when usb storage device is connected to usb host, this
+	  function support detection of volume state changes.
+
+	  If unsure, say N.

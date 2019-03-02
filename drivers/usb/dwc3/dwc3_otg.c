@@ -34,6 +34,7 @@ MODULE_PARM_DESC(max_chgr_retry_count, "Max invalid charger retry count");
 
 static void dwc3_otg_notify_host_mode(struct usb_otg *otg, int host_mode);
 
+static int dwc3_otg_set_power(struct usb_phy *phy, unsigned mA); /*for compiling*/
 /**
  * dwc3_otg_start_host -  helper function for starting/stoping the host controller driver.
  *
@@ -173,6 +174,44 @@ static int dwc3_otg_start_host(struct usb_otg *otg, int on)
 
 	return 0;
 }
+/*wall charger in which D+/D- disconnected would be recognized as usb cable, 2/6*/
+static int skip_invalid_chg_work = 0;
+
+/*
+ *for notify otg from gadget, wangzy 8/8
+ *event 1:  skip invalid_chg work, as usb has been configured
+ *event 2:  ...
+*/
+static int dwc3_otg_event_from_gadget(struct usb_phy *phy, unsigned event)
+{
+	//struct dwc3_otg *dotg = container_of(phy->otg, struct dwc3_otg, otg);
+	if (event == 1){
+		dev_dbg(phy->dev, "prepare skip_invalid_chg_work\n");
+		skip_invalid_chg_work = 1;
+		}
+	return 0;
+}
+/*end*/
+
+/*wall charger in which D+/D- disconnected would be recognized as usb cable, 3/6
+ * dwc3_invalid_chg_work - workqueue function.
+ * @w: Pointer to the dwc3 otg workqueue
+ */
+static void dwc3_invalid_chg_work(struct work_struct *w)
+{
+	struct dwc3_otg *dotg = container_of(w, struct dwc3_otg, invalid_chg_work.work);
+	struct usb_phy *phy = dotg->otg.phy;
+	if(skip_invalid_chg_work){
+		dev_dbg(phy->dev,  "excute skip_invalid_chg_work\n");
+		skip_invalid_chg_work = 0;
+		return;
+	}
+
+	pr_info("usb schedule %s\n",__func__);
+	dwc3_otg_set_power(phy, DWC3_IDEV_CHG_INVALID);
+	return;
+}
+/*end*/
 
 /**
  * dwc3_otg_start_peripheral -  bind/unbind the peripheral controller.
@@ -499,7 +538,9 @@ static void dwc3_otg_sm_work(struct work_struct *w)
 	unsigned long delay = 0;
 
 	dev_dbg(phy->dev, "%s state\n", usb_otg_state_string(phy->state));
-
+	if (charger) {
+		printk(KERN_INFO "usb phy:%s state ,input = %lx ; and charge_type = %d\n",  usb_otg_state_string(phy->state),dotg->inputs,charger->chg_type);
+	}
 	/* Check OTG state */
 	switch (phy->state) {
 	case OTG_STATE_UNDEFINED:
@@ -556,6 +597,10 @@ static void dwc3_otg_sm_work(struct work_struct *w)
 							DWC3_IDEV_CHG_MAX);
 					/* fall through */
 				case DWC3_SDP_CHARGER:
+					/*wall charger in which D+/D- disconnected would be recognized as usb cable, 4/6*/
+					schedule_delayed_work(&dotg->invalid_chg_work, 5*HZ);
+					/*end*/
+
 					/*
 					 * Increment pm usage count upon cable
 					 * connect. Count is decremented in
@@ -631,6 +676,11 @@ static void dwc3_otg_sm_work(struct work_struct *w)
 				}
 			}
 		} else {
+			/*wall charger in which D+/D- disconnected would be recognized as usb cable, 5/6*/
+			dev_dbg(phy->dev,  "cancel invalid_chg_work\n");
+			cancel_delayed_work_sync(&dotg->invalid_chg_work);
+			skip_invalid_chg_work = 0;
+			/*end*/
 			if (charger)
 				charger->start_detection(dotg->charger, false);
 
@@ -793,9 +843,15 @@ int dwc3_otg_init(struct dwc3 *dwc)
 	dwc->dotg = dotg;
 	dotg->dwc = dwc;
 	dotg->otg.phy->dev = dwc->dev;
+	/*for notify otg from gadget, wangzy 7/8*/
+	dotg->otg.phy->event_from_gadget = dwc3_otg_event_from_gadget;
+	/*end*/
 
 	init_completion(&dotg->dwc3_xcvr_vbus_init);
 	INIT_DELAYED_WORK(&dotg->sm_work, dwc3_otg_sm_work);
+	/*wall charger in which D+/D- disconnected would be recognized as usb cable,6/6*/
+	INIT_DELAYED_WORK(&dotg->invalid_chg_work, dwc3_invalid_chg_work);
+	/*end*/
 
 	return 0;
 }

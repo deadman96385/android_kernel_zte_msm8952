@@ -51,7 +51,7 @@
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
-
+#include <linux/switch.h> //for online offline event, xingbl_20140704
 #include "dwc3_otg.h"
 
 /* Global constants */
@@ -834,7 +834,10 @@ struct dwc3 {
 
 	struct usb_phy		*usb2_phy;
 	struct usb_phy		*usb3_phy;
-
+    //for online offline event, xingbl_20140704
+	struct switch_dev sdev;
+	bool	start_adbd;
+	//end
 	void __iomem		*regs;
 	size_t			regs_size;
 

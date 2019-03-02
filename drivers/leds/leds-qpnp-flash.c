@@ -1240,7 +1240,7 @@ static void qpnp_flash_led_work(struct work_struct *work)
 		rc = qpnp_led_masked_write(led->spmi_dev,
 			FLASH_LED_STROBE_CTRL(led->base),
 			FLASH_STROBE_MASK,
-			flash_node->trigger);
+			flash_node->trigger | FLASH_LED0_TRIGGER);//add FLASH_LED0_TRIGGER to insure led0 outpupt enable
 		if (rc) {
 			dev_err(&led->spmi_dev->dev,
 				"Strobe ctrl reg write failed\n");
@@ -1362,6 +1362,7 @@ static void qpnp_flash_led_work(struct work_struct *work)
 				goto exit_flash_led_work;
 			}
 		} else {
+			max_curr_avail_ma= 1000;//qcomm change
 			if (max_curr_avail_ma <
 					flash_node->prgm_current) {
 				dev_err(&led->spmi_dev->dev,
@@ -1477,11 +1478,17 @@ static void qpnp_flash_led_work(struct work_struct *work)
 				}
 			}
 		}
+//0x0001D347reg (flash1_led_strobe_control), bit 7 means en_led1_output
+              rc = spmi_ext_register_readl(led->spmi_dev->ctrl,
+					led->spmi_dev->sid,
+					FLASH_LED_STROBE_CTRL(led->base),
+					&val, 1);
+
 
 		rc = qpnp_led_masked_write(led->spmi_dev,
 			FLASH_LED_STROBE_CTRL(led->base),
 			FLASH_STROBE_MASK,
-			flash_node->trigger);
+			val|flash_node->trigger);
 		if (rc) {
 			dev_err(&led->spmi_dev->dev,
 				"Strobe reg write failed\n");

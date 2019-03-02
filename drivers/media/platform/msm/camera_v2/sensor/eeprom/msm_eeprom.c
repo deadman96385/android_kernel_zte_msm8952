@@ -1016,7 +1016,15 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
 	rc = of_property_read_u32(of_node, "qcom,i2c-freq-mode",
 		&eb_info->i2c_freq_mode);
 	if (rc < 0 || (eb_info->i2c_freq_mode >= I2C_MAX_MODES)) {
+/*
+ * change i2c default frequency to fast mode
+ * ZTE_CAM_LIJING_20151012
+ */
+#if 0
 		eb_info->i2c_freq_mode = I2C_STANDARD_MODE;
+#else
+		eb_info->i2c_freq_mode = I2C_FAST_MODE;
+#endif
 		CDBG("%s Default I2C standard speed mode.\n", __func__);
 	}
 

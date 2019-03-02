@@ -28,22 +28,40 @@ DEFINE_MSM_MUTEX(ov2685_mut);
 static struct msm_sensor_ctrl_t ov2685_s_ctrl;
 
 static struct msm_sensor_power_setting ov2685_power_setting[] = {
-	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VIO,
-		.config_val = 0,
+{
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VIO,
+		.config_val = GPIO_OUT_LOW,
 		.delay = 1,
 	},
 	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VANA,
-		.config_val = 0,
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VANA,
+		.config_val = GPIO_OUT_LOW,
 		.delay = 1,
 	},
 	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VDIG,
-		.config_val = 0,
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VDIG,
+		.config_val =GPIO_OUT_LOW,
+		.delay = 1,
+	},
+	{
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VIO,
+		.config_val = GPIO_OUT_HIGH,
+		.delay = 2,
+	},
+	{
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VANA,
+		.config_val = GPIO_OUT_HIGH,
+		.delay = 1,
+	},
+	{
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VDIG,
+		.config_val =GPIO_OUT_HIGH,
 		.delay = 1,
 	},
 	{
@@ -728,7 +746,7 @@ static struct msm_camera_i2c_client ov2685_sensor_i2c_client = {
 };
 
 static const struct of_device_id ov2685_dt_match[] = {
-	{.compatible = "ovti,ov2685", .data = &ov2685_s_ctrl},
+	{.compatible = "ov2685", .data = &ov2685_s_ctrl},
 	{ }
 };
 
@@ -738,6 +756,7 @@ static int32_t ov2685_platform_probe(struct platform_device *pdev)
 {
 	int32_t rc;
 	const struct of_device_id *match;
+	pr_err("%s:%d \n", __func__, __LINE__);
 	match = of_match_device(ov2685_dt_match, &pdev->dev);
 	if (match)
 		rc = msm_sensor_platform_probe(pdev, match->data);
@@ -750,7 +769,7 @@ static int32_t ov2685_platform_probe(struct platform_device *pdev)
 
 static struct platform_driver ov2685_platform_driver = {
 	.driver = {
-		.name = "ovti,ov2685",
+		.name = "ov2685",
 		.owner = THIS_MODULE,
 		.of_match_table = ov2685_dt_match,
 	},
@@ -1053,7 +1072,6 @@ int32_t ov2685_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
 	return rc;
 }
 #ifdef CONFIG_COMPAT
-
 int32_t ov2685_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 	void __user *argp)
 {

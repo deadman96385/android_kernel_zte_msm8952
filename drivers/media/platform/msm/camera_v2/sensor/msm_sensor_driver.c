@@ -17,7 +17,23 @@
 #include "camera.h"
 #include "msm_cci.h"
 #include "msm_camera_dt_util.h"
-
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+#include "zte_camera_sensor_util.h"
+ // <---
+ /*
+  * camera sensor module compatile
+  * 
+  * by ZTE_YCM_20140728 yi.changming 000028
+  */
+// --->
+ #include "msm_eeprom.h"
+  // <---
+ 
 /* Logging macro */
 #undef CDBG
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
@@ -144,6 +160,60 @@ static int32_t msm_sensor_driver_create_v4l_subdev
 
 	return rc;
 }
+/*
+  * camera sensor module compatile
+  * 
+  * by ZTE_YCM_20140728 yi.changming 000028
+  */
+// --->	
+static int32_t msm_get_info_from_eeprom(
+		struct msm_sensor_ctrl_t *s_ctrl,struct device_node *eeprom_node)
+{
+	struct platform_device *eeprom_device = NULL;
+	struct v4l2_subdev *sd = NULL;
+	struct msm_eeprom_ctrl_t *e_ctrl = NULL;
+
+	if (!eeprom_node) {
+		pr_err("%s: can't find eeprom sensor phandle\n", __func__);
+		return -1;
+	}
+	
+	eeprom_device = of_find_device_by_node(eeprom_node);
+	if (!eeprom_device) {
+			pr_err("%s:%d: can't find the device by node\n", __func__,__LINE__);
+			return -1;
+	}
+		
+	sd = platform_get_drvdata(eeprom_device);
+	if(!sd){
+		pr_err("%s:%d: can't find the eeprom sd\n", __func__,__LINE__);
+		return -1;
+	}
+
+	e_ctrl = v4l2_get_subdevdata(sd);
+
+	if(!e_ctrl){
+		pr_err("%s:%d: can't find the eeprom sd\n", __func__,__LINE__);
+		return -1;
+	}
+
+	s_ctrl->sensordata->sensor_module_name = e_ctrl->sensor_module_name;
+	s_ctrl->sensordata->chromtix_lib_name= e_ctrl->chromtix_lib_name;
+	s_ctrl->sensordata->default_chromtix_lib_name= e_ctrl->default_chromtix_lib_name;
+
+	if(e_ctrl->sensor_module_name)
+		pr_err("%s:%d: sensor_module_name:%s\n", __func__,__LINE__,e_ctrl->sensor_module_name);
+	
+	if(e_ctrl->chromtix_lib_name)
+		pr_err("%s:%d:chromtix_lib_name: %s\n", __func__,__LINE__,e_ctrl->chromtix_lib_name);
+	
+	if(e_ctrl->default_chromtix_lib_name)
+		pr_err("%s:%d:default_chromtix_lib_name: %s\n", __func__,__LINE__,e_ctrl->default_chromtix_lib_name);
+
+	return 0;
+	
+}
+// <---	
 
 static int32_t msm_sensor_fill_eeprom_subdevid_by_name(
 				struct msm_sensor_ctrl_t *s_ctrl)
@@ -209,7 +279,14 @@ static int32_t msm_sensor_fill_eeprom_subdevid_by_name(
 			of_node_put(src_node);
 			continue;
 		}
-
+/*
+  * camera sensor module compatile
+  * 
+  * by ZTE_YCM_20140728 yi.changming 000028
+  */
+// --->		
+		msm_get_info_from_eeprom(s_ctrl,src_node);
+// <---		
 		*eeprom_subdev_id = val;
 		CDBG("Done. Eeprom subdevice id is %d\n", val);
 		of_node_put(src_node);
@@ -895,6 +972,18 @@ CSID_TG:
 	s_ctrl->sensordata->eeprom_name = slave_info->eeprom_name;
 	s_ctrl->sensordata->actuator_name = slave_info->actuator_name;
 	s_ctrl->sensordata->ois_name = slave_info->ois_name;
+
+/*
+  * camera sensor module compatile
+  * 
+  * by ZTE_YCM_20140728 yi.changming 000028
+  */
+// --->
+	s_ctrl->sensordata->sensor_module_name = NULL;
+	s_ctrl->sensordata->chromtix_lib_name = NULL;
+	s_ctrl->sensordata->default_chromtix_lib_name = NULL;
+// <---
+
 	/*
 	 * Update eeporm subdevice Id by input eeprom name
 	 */
@@ -984,6 +1073,17 @@ CSID_TG:
 	s_ctrl->sensordata->cam_slave_info = slave_info;
 
 	msm_sensor_fill_sensor_info(s_ctrl, probed_info, entity_name);
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+	if(msm_sensor_enable_debugfs(s_ctrl))
+		CDBG("%s:%d creat debugfs fail\n", __func__, __LINE__);
+
+	msm_sensor_register_sysdev(s_ctrl);
+// <---
 
 	return rc;
 

@@ -17,6 +17,14 @@
 #include "msm_camera_i2c_mux.h"
 #include <linux/regulator/rpm-smd-regulator.h>
 #include <linux/regulator/consumer.h>
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+#include "zte_camera_sensor_util.h"
+ // <---
 
 #undef CDBG
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
@@ -714,7 +722,29 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 		CDBG("%s:%d mount angle valid %d value %d\n", __func__,
 			__LINE__, cdata->cfg.sensor_info.is_mount_angle_valid,
 			cdata->cfg.sensor_info.sensor_mount_angle);
-
+/*
+  * camera sensor module compatile
+  * 
+  * by ZTE_YCM_20140728 yi.changming 000028
+  */
+// --->	
+		if(s_ctrl->sensordata->chromtix_lib_name){
+			memcpy(cdata->cfg.sensor_info.chromtix_lib_name,
+				s_ctrl->sensordata->chromtix_lib_name,
+				sizeof(cdata->cfg.sensor_info.chromtix_lib_name));
+					printk("%s:%d chromtix_lib_name %s\n", __func__, __LINE__,
+			cdata->cfg.sensor_info.chromtix_lib_name);
+		}
+		if(s_ctrl->sensordata->default_chromtix_lib_name){
+			memcpy(cdata->cfg.sensor_info.default_chromtix_lib_name,
+				s_ctrl->sensordata->default_chromtix_lib_name,
+				sizeof(cdata->cfg.sensor_info.default_chromtix_lib_name));
+					printk("%s:%d sensor name %s\n", __func__, __LINE__,
+			cdata->cfg.sensor_info.sensor_name);
+					printk("%s:%d default_chromtix_lib_name %s\n", __func__, __LINE__,
+			cdata->cfg.sensor_info.default_chromtix_lib_name);
+		}
+// <---
 		break;
 	case CFG_GET_SENSOR_INIT_PARAMS:
 		cdata->cfg.sensor_init_params.modes_supported =
@@ -1118,7 +1148,29 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 		CDBG("%s:%d mount angle valid %d value %d\n", __func__,
 			__LINE__, cdata->cfg.sensor_info.is_mount_angle_valid,
 			cdata->cfg.sensor_info.sensor_mount_angle);
-
+/*
+  * camera sensor module compatile
+  * 
+  * by ZTE_YCM_20140728 yi.changming 000028
+  */
+// --->	
+		if(s_ctrl->sensordata->chromtix_lib_name){
+			memcpy(cdata->cfg.sensor_info.chromtix_lib_name,
+				s_ctrl->sensordata->chromtix_lib_name,
+				sizeof(cdata->cfg.sensor_info.chromtix_lib_name));
+					printk("%s:%d chromtix_lib_name %s\n", __func__, __LINE__,
+			cdata->cfg.sensor_info.chromtix_lib_name);
+		}
+		if(s_ctrl->sensordata->default_chromtix_lib_name){
+			memcpy(cdata->cfg.sensor_info.default_chromtix_lib_name,
+				s_ctrl->sensordata->default_chromtix_lib_name,
+				sizeof(cdata->cfg.sensor_info.default_chromtix_lib_name));
+					printk("%s:%d sensor name %s\n", __func__, __LINE__,
+			cdata->cfg.sensor_info.sensor_name);
+					printk("%s:%d default_chromtix_lib_name %s\n", __func__, __LINE__,
+			cdata->cfg.sensor_info.default_chromtix_lib_name);
+		}
+// <---
 		break;
 	case CFG_GET_SENSOR_INIT_PARAMS:
 		cdata->cfg.sensor_init_params.modes_supported =
@@ -1731,6 +1783,16 @@ int32_t msm_sensor_platform_probe(struct platform_device *pdev,
 
 	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
 	CDBG("%s:%d\n", __func__, __LINE__);
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+	if(msm_sensor_enable_debugfs(s_ctrl))
+		CDBG("%s:%d creat debugfs fail\n", __func__, __LINE__);
+	msm_sensor_register_sysdev(s_ctrl);
+// <---	
 	return rc;
 }
 
@@ -1852,6 +1914,17 @@ int msm_sensor_i2c_probe(struct i2c_client *client,
 	CDBG("%s:%d\n", __func__, __LINE__);
 
 	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
+/*
+  * use  camera sensor engineering mode  interface
+  * use  test camera sensor mipi clock interface
+  * by ZTE_YCM_20140710 yi.changming 000006
+  */
+// --->
+	if(msm_sensor_enable_debugfs(s_ctrl))
+		CDBG("%s:%d creat debugfs fail\n", __func__, __LINE__);
+	msm_sensor_register_sysdev(s_ctrl);
+// <---	
+
 	return rc;
 }
 

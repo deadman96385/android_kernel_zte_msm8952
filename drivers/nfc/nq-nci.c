@@ -316,7 +316,7 @@ static long nfc_compat_ioctl(struct file *pfile, unsigned int cmd,
 	arg = (compat_u64)arg;
 
 	switch (cmd) {
-	case NFC_SET_PWR:
+	case PN544_SET_PWR:
 		nfc_ioctl_power_states(pfile, cmd, arg);
 		break;
 	case SET_RX_BLOCK:
@@ -355,7 +355,7 @@ static long nfc_ioctl(struct file *pfile, unsigned int cmd,
 	int r = 0;
 
 	switch (cmd) {
-	case NFC_SET_PWR:
+	case PN544_SET_PWR:
 		r = nfc_ioctl_power_states(pfile, cmd, arg);
 		break;
 	case NFC_CLK_REQ:
@@ -582,7 +582,7 @@ static int nqx_probe(struct i2c_client *client,
 	spin_lock_init(&nqx_dev->irq_enabled_lock);
 
 	nqx_dev->nqx_device.minor = MISC_DYNAMIC_MINOR;
-	nqx_dev->nqx_device.name = "nq-nci";
+	nqx_dev->nqx_device.name = "pn544";
 	nqx_dev->nqx_device.fops = &nfc_dev_fops;
 
 	r = misc_register(&nqx_dev->nqx_device);
@@ -676,7 +676,7 @@ static struct i2c_driver nqx = {
 	.remove = nqx_remove,
 	.driver = {
 		.owner = THIS_MODULE,
-		.name = "nq-nci",
+		.name = "pn544",
 		.of_match_table = msm_match_table,
 		.pm = &nfc_pm_ops,
 	},

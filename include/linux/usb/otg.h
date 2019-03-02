@@ -112,6 +112,17 @@ otg_set_peripheral(struct usb_otg *otg, struct usb_gadget *periph)
 	return -ENOTSUPP;
 }
 
+
+/*for notify otg from gadget, wangzy 5/8*/
+static inline int
+usb_phy_event_from_gadget(struct usb_phy *x, unsigned event)
+{
+	if (x && x->event_from_gadget)
+		return x->event_from_gadget(x, event);
+	return 0;
+}
+/*end*/
+
 static inline int
 otg_start_srp(struct usb_otg *otg)
 {

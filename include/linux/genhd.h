@@ -200,6 +200,10 @@ struct gendisk {
 	struct blk_integrity *integrity;
 #endif
 	int node_id;
+#ifdef CONFIG_USB_VOLUME_DETECT
+	int media_present;
+	int usb_interfaces;
+#endif
 };
 
 static inline struct gendisk *part_to_disk(struct hd_struct *part)
@@ -243,6 +247,13 @@ static inline int disk_max_parts(struct gendisk *disk)
 		return DISK_MAX_PARTS;
 	return disk->minors;
 }
+
+#ifdef CONFIG_USB_VOLUME_DETECT
+static inline bool disk_partitionable(struct gendisk *disk)
+{
+	return disk_max_parts(disk) > 1;
+}
+#endif
 
 static inline bool disk_part_scan_enabled(struct gendisk *disk)
 {

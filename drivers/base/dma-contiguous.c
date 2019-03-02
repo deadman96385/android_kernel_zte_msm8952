@@ -42,6 +42,9 @@
 #include <linux/dma-removed.h>
 #include <linux/delay.h>
 #include <trace/events/kmem.h>
+#include <asm/setup.h> //ZTE_ZB_SDLOG_20150812_01
+
+extern	char __initdata boot_command_line[COMMAND_LINE_SIZE]; //ZTE_ZB_SDLOG_20150812_01
 
 struct cma {
 	unsigned long	base_pfn;
@@ -257,6 +260,11 @@ int __init cma_fdt_scan(unsigned long node, const char *uname,
 	unsigned long addr_cells = dt_root_addr_cells;
 	phys_addr_t limit = MEMBLOCK_ALLOC_ANYWHERE;
 	const char *status;
+	//ZTE_ZB_SDLOG_20150812_01 begin
+	const char *size_str;
+	char       *p;
+	int        size_customized;
+	//ZTE_ZB_SDLOG_20150812_01 end
 
 	if (!of_get_flat_dt_prop(node, "linux,reserve-contiguous-region", NULL))
 		return 0;
@@ -283,6 +291,21 @@ int __init cma_fdt_scan(unsigned long node, const char *uname,
 
 	base = dt_mem_next_cell(addr_cells, &prop);
 	size = dt_mem_next_cell(size_cells, &prop);
+
+	//ZTE_ZB_SDLOG_20150812_01 begin
+	prop = of_get_flat_dt_prop(node, "size_from_command", NULL);
+	if (prop) {
+		size_str = (char *)prop;
+		pr_info("zhaobin: size_str %s\n", size_str);
+
+		if ((p = strstr(boot_command_line, size_str)) != NULL) {
+			if ( -1 != sscanf( p + strlen(size_str), "%08x", &size_customized ) ) {
+				pr_info("zhaobin: size from command 0x%lx\n", (unsigned long)size_customized);
+				size = size_customized;
+			}
+		}
+	}
+	//ZTE_ZB_SDLOG_20150812_01 end
 
 	name = of_get_flat_dt_prop(node, "label", NULL);
 	in_system =

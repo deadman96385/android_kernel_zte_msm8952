@@ -128,6 +128,10 @@ struct usb_phy {
 	/* reset the PHY clocks */
 	int	(*reset)(struct usb_phy *x);
 
+	/*for notify otg from gadget, wangzy 6/8*/
+	int	(*event_from_gadget)(struct usb_phy *x,
+				unsigned event);
+
 	/* for notification of usb_phy_dbg_events */
 	void	(*dbg_event)(struct usb_phy *x,
 			char *event, int msg1, int msg2);

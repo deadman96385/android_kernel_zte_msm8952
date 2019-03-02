@@ -22,6 +22,41 @@
 #include <linux/of.h>
 
 #include <asm/cputype.h>
+
+/*add by ZTE_BOOT*/
+#ifdef CONFIG_ZTE_BOOT_MODE
+
+#define ANDROID_BOOT_MODE              "androidboot.mode="
+#define ANDROID_BOOT_MODE_NORMAL       "normal"
+#define ANDROID_BOOT_MODE_FTM          "ftm"
+#define ANDROID_BOOT_MODE_RECOVERY     "recovery"
+#define ANDROID_BOOT_MODE_FFBM         "ffbm"
+
+#define MAGIC_NUM_FTM_MODE          0x6D6D5446 /*FTMM*/
+#define MAGIC_NUM_NON_FTM_MODE      0x4D54464E /*NFTM*/
+
+/*
+ * Boot mode definition
+ */
+enum {
+    ENUM_BOOT_MODE_NORMAL            = 0,
+    ENUM_BOOT_MODE_FTM               = 1,
+    ENUM_BOOT_MODE_RTC_ALARM         = 2,
+    ENUM_BOOT_MODE_CHARGER           = 3,      //ZTE charge
+    ENUM_BOOT_MODE_RECOVERY          = 4,
+    ENUM_BOOT_MODE_FFBM              = 5,      //ZTE FFBM
+    ENUM_BOOT_MODE_UNKNOWN,
+    ENUM_BOOT_MODE_MAX
+};
+
+void socinfo_set_boot_mode(int boot_mode);
+int socinfo_get_ftm_flag(void);
+int socinfo_get_ffbm_flag(void);
+
+void socinfo_set_hw_ver(char *ver);
+#endif
+
+
 /*
  * SOC version type with major number in the upper 16 bits and minor
  * number in the lower 16 bits.  For example:
@@ -213,6 +248,11 @@ const int cpu_is_krait(void);
 const int cpu_is_krait_v1(void);
 const int cpu_is_krait_v2(void);
 const int cpu_is_krait_v3(void);
+/*
+ * Support for PV mode by, lianghouxing
+ */
+void socinfo_set_pv_flag(int val);
+int socinfo_get_pv_flag(void);
 
 static inline int cpu_is_msm7x01(void)
 {

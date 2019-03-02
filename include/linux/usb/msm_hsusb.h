@@ -498,6 +498,9 @@ struct msm_otg {
 	struct delayed_work chg_work;
 	struct delayed_work id_status_work;
 	struct delayed_work suspend_work;
+	/*wall charger in which D+/D- disconnected would be recognized as usb cable, 7/7*/
+	struct delayed_work invalid_chg_work;
+	/*end*/
 	enum usb_chg_state chg_state;
 	enum usb_chg_type chg_type;
 	unsigned dcd_time;

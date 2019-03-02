@@ -203,6 +203,8 @@ config ARCH_MSM
 config ARCH_MSM8916
 	bool "Enable Support for Qualcomm MSM8916"
 	depends on ARCH_MSM
+	select ZTE_BOOT_MODE
+	select ZTE_FTM
 	select RCU_BOOST if DEBUG_KMEMLEAK
 	help
 	  This enables support for the MSM8916 chipset. If you dont
@@ -244,6 +246,55 @@ config ARCH_XGENE
 	bool "AppliedMicro X-Gene SOC Family"
 	help
 	  This enables support for AppliedMicro X-Gene SOC Family
+
+endmenu
+
+config ZTE_BOOT_MODE
+        depends on ARCH_MSM8916
+        bool "ZTE BOOT MODE"
+        default n
+        help
+          Support for boot mode
+
+menu "MSM Board Selection"
+
+config BOARD_TOM
+    depends on ARCH_MSM8916
+    bool "ZTE TOM"
+    select SND_SOC_AK4375
+    help
+      Support for ZTE MSM8916 TOM device.
+      Audio select AK4375 for USA project.
+
+config BOARD_NANCY
+    depends on ARCH_MSM8916
+    bool "ZTE NANCY"
+    select SND_SOC_AK4375    
+    help
+      Support for ZTE MSM8916 NANCY device.
+      Audio select AK4375 for USA project.     
+
+config BOARD_JERRY
+    depends on ARCH_MSM8916
+    bool "ZTE JERRY"
+    select SND_SOC_AK4375     
+    help
+      Support for ZTE MSM8916 JERRY device.
+      Audio select AK4375 for USA project.       
+
+config BOARD_ORCHID
+    depends on ARCH_MSM8916
+    bool "ZTE ORCHID"
+    help
+      Support for ZTE MSM8916 ORCHID device.
+
+config BOARD_LILY
+    depends on ARCH_MSM8916
+    bool "ZTE LILY"
+    select SND_SOC_AK4375     
+    help
+      Support for ZTE MSM8916 LILY device.
+      Audio select AK4375 for USA project.       
 
 endmenu
 

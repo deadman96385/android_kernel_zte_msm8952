@@ -693,6 +693,7 @@ static inline void cpu_unprepare(struct lpm_cluster *cluster, int cpu_index,
 		cpu_pm_exit();
 }
 
+extern bool zte_msm_cpu_pm_enter_sleep(enum msm_pm_sleep_mode mode, bool from_idle);
 static int lpm_cpuidle_enter(struct cpuidle_device *dev,
 		struct cpuidle_driver *drv, int index)
 {
@@ -727,8 +728,7 @@ static int lpm_cpuidle_enter(struct cpuidle_device *dev,
 	if (idx > 0)
 		update_debug_pc_event(CPU_ENTER, idx, 0xdeaffeed, 0xdeaffeed,
 					true);
-	success = msm_cpu_pm_enter_sleep(cluster->cpu->levels[idx].mode,
-						true);
+	success = zte_msm_cpu_pm_enter_sleep(cluster->cpu->levels[idx].mode, true);
 	if (idx > 0)
 		update_debug_pc_event(CPU_EXIT, idx, success, 0xdeaffeed,
 					true);
@@ -947,7 +947,7 @@ static int lpm_suspend_enter(suspend_state_t state)
 	if (idx > 0)
 		update_debug_pc_event(CPU_ENTER, idx, 0xdeaffeed,
 					0xdeaffeed, false);
-	msm_cpu_pm_enter_sleep(cluster->cpu->levels[idx].mode, false);
+	zte_msm_cpu_pm_enter_sleep(cluster->cpu->levels[idx].mode, false);
 	if (idx > 0)
 		update_debug_pc_event(CPU_EXIT, idx, true, 0xdeaffeed,
 					false);

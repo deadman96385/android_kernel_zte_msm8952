@@ -23,7 +23,7 @@
 #include <linux/ioctl.h>
 #include <linux/miscdevice.h>
 
-#define NFC_SET_PWR	_IOW(0xE9, 0x01, unsigned int)
+#define PN544_SET_PWR	_IOW(0xE9, 0x01, unsigned int)
 #define SET_RX_BLOCK	_IOW(0xE9, 0x04, unsigned int)
 #define NFC_CLK_REQ	_IOW(0xE9, 0x02, unsigned int)
 #define SET_EMULATOR_TEST_POINT		_IOW(0xE9, 0x05, unsigned int)

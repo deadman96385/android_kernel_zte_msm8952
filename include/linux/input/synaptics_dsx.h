@@ -26,7 +26,7 @@
  * @nbuttons: number of buttons
  * @map: button map
  */
-struct synaptics_rmi4_capacitance_button_map {
+struct synaptics_dsx_cap_button_map {
 	unsigned char nbuttons;
 	unsigned char *map;
 };
@@ -55,15 +55,22 @@ struct synaptics_rmi4_capacitance_button_map {
  * @gpio_config: pointer to gpio configuration function
  * @capacitance_button_map: pointer to 0d button map
  */
-struct synaptics_rmi4_platform_data {
+struct synaptics_dsx_platform_data {
+    struct i2c_client *client;
 	bool x_flip;
 	bool y_flip;
+	bool swap_axes;
+	bool regulator_en;
+	char *vdd;
+	char *vbus;
+	unsigned int panel_x;
+	unsigned int panel_y;
+	unsigned reset_delay_ms;
+	int maxy_offset;
 	bool i2c_pull_up;
 	bool power_down_enable;
 	bool disable_gpios;
 	bool do_lockdown;
-	bool detect_device;
-	bool modify_reso;
 	unsigned irq_gpio;
 	u32 irq_flags;
 	u32 reset_flags;
@@ -78,9 +85,8 @@ struct synaptics_rmi4_platform_data {
 	unsigned disp_maxy;
 	unsigned reset_delay;
 	const char *fw_image_name;
-	unsigned int package_id;
 	int (*gpio_config)(unsigned gpio, bool configure);
-	struct synaptics_rmi4_capacitance_button_map *capacitance_button_map;
+	struct synaptics_dsx_cap_button_map *cap_button_map;
 };
 
 #endif

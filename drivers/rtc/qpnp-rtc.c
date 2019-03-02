@@ -81,6 +81,7 @@ static int qpnp_read_wrapper(struct qpnp_rtc *rtc_dd, u8 *rtc_val,
 	return 0;
 }
 
+
 static int qpnp_write_wrapper(struct qpnp_rtc *rtc_dd, u8 *rtc_val,
 			u16 base, int count)
 {
@@ -500,7 +501,6 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 
 	rtc_dd->rtc_dev = &(spmi->dev);
 	rtc_dd->spmi = spmi;
-
 	/* Get RTC/ALARM resources */
 	spmi_for_each_container_dev(spmi_resource, spmi) {
 		if (!spmi_resource) {

@@ -1129,6 +1129,14 @@ static int disk_uevent(struct device *dev, struct kobj_uevent_env *env)
 		cnt++;
 	disk_part_iter_exit(&piter);
 	add_uevent_var(env, "NPARTS=%u", cnt);
+#ifdef CONFIG_USB_VOLUME_DETECT
+	if (disk->usb_interfaces == 1) {
+		/*MEDIAPRST event of usb*/
+		add_uevent_var(env, "MEDIAPRST=%d", disk->media_present);
+		printk(KERN_INFO "%s %d, disk->media_present=%d, cnt=%d\n",
+				__func__, __LINE__, disk->media_present, cnt);
+	}
+#endif
 	return 0;
 }
 
@@ -1641,8 +1649,15 @@ static void disk_check_events(struct disk_events *ev,
 	unsigned long intv;
 	int nr_events = 0, i;
 
-	/* check events */
-	events = disk->fops->check_events(disk, clearing);
+#ifdef CONFIG_USB_VOLUME_DETECT
+	if (disk->usb_interfaces != 1){
+		/* check events */
+		events = disk->fops->check_events(disk, clearing);
+	}
+#else
+		/* check events */
+		events = disk->fops->check_events(disk, clearing);
+#endif
 
 	/* accumulate pending events and schedule next poll if necessary */
 	spin_lock_irq(&ev->lock);
@@ -1666,8 +1681,16 @@ static void disk_check_events(struct disk_events *ev,
 		if (events & disk->events & (1 << i))
 			envp[nr_events++] = disk_uevents[i];
 
+#ifdef CONFIG_USB_VOLUME_DETECT
+	if (disk->usb_interfaces != 1) {
+		if (nr_events)
+			kobject_uevent_env(&disk_to_dev(disk)->kobj,
+				KOBJ_CHANGE, envp);
+	}
+#else
 	if (nr_events)
 		kobject_uevent_env(&disk_to_dev(disk)->kobj, KOBJ_CHANGE, envp);
+#endif
 }
 
 /*

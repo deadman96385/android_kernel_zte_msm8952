@@ -26,7 +26,7 @@
 #include <linux/workqueue.h>
 #include <linux/freezer.h>
 #include "lpm-levels.h"
-
+#define ALARM_DELTA 120
 /**
  * struct alarm_base - Alarm timer bases
  * @lock:		Lock for syncrhonized access to the base
@@ -116,7 +116,9 @@ void set_power_on_alarm(long secs, bool enable)
 	 *to power up the device before actual alarm
 	 *expiration
 	 */
-	if (alarm_time <= rtc_secs)
+	if ((alarm_time - ALARM_DELTA) > rtc_secs)
+		alarm_time -= ALARM_DELTA;
+	else
 		goto disable_alarm;
 
 	rtc_time_to_tm(alarm_time, &alarm.time);

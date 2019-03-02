@@ -331,6 +331,12 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 	unsigned int type = button->type ?: EV_KEY;
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
 
+/* zte_tzb add debug log for P852A01,20151215 */		
+#if defined (CONFIG_BOARD_ORCHID)
+	printk("kernel keycode=%d\n",button->code); 
+#endif
+/* zte_tzb add debug log for P852A01 end,20151215 */
+
 	if (type == EV_ABS) {
 		if (state)
 			input_event(input, type, button->code, button->value);

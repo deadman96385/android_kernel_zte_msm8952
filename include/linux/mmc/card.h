@@ -109,6 +109,9 @@ struct mmc_ext_csd {
 	u8			raw_trim_mult;		/* 232 */
 	u8			raw_bkops_status;	/* 246 */
 	u8			raw_sectors[4];		/* 212 - 4 bytes */
+	u8			life_time_est_type_a;	/* 268 */
+	u8			life_time_est_type_b;	/* 269 */
+	u8			pre_eol_info;		/* 267 */
 	u8			cmdq_depth;		/* 307 */
 	u8			cmdq_support;		/* 308 */
 
@@ -364,6 +367,7 @@ struct mmc_card {
  /* Skip data-timeout advertised by card */
 #define MMC_QUIRK_BROKEN_DATA_TIMEOUT	(1<<13)
 #define MMC_QUIRK_CACHE_DISABLE (1 << 14)       /* prevent cache enable */
+#define MMC_QUIRK_BKOPS_DISABLE (1 << 15)       /* prevent bkops enable */
 
 	unsigned int		erase_size;	/* erase size in sectors */
  	unsigned int		erase_shift;	/* if erase unit is power 2 */

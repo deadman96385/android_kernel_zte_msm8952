@@ -209,6 +209,15 @@ struct csi_lane_params_t {
 
 struct msm_sensor_info_t {
 	char     sensor_name[MAX_SENSOR_NAME];
+ /*
+  * camera sensor module compatile
+  * 
+  * by ZTE_YCM_20140728 yi.changming 000028
+  */
+// --->
+	char     chromtix_lib_name[MAX_SENSOR_NAME];
+	char     default_chromtix_lib_name[MAX_SENSOR_NAME];
+// <---
 	uint32_t session_id;
 	int32_t  subdev_id[SUB_MODULE_MAX];
 	int32_t  subdev_intf[SUB_MODULE_MAX];

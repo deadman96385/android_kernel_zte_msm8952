@@ -29,3 +29,7 @@ obj-$(CONFIG_INPUT_KEYRESET)	+= keyreset.o
 obj-$(CONFIG_INPUT_KEYCOMBO)	+= keycombo.o
 obj-$(CONFIG_SENSORS_HALL)	+= hall_sensor.o
 
+#shilinfeng for fp 20150828
+obj-$(CONFIG_INPUT_SYNA_VFS) += fingerprint/synaptics_vfs/
+obj-$(CONFIG_INPUT_FPC) += fingerprint/fpc/
+
